@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<persistence xmlns="https://jakarta.ee/xml/ns/persistence"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="https://jakarta.ee/xml/ns/persistence https://jakarta.ee/xml/ns/persistence/persistence_3_1.xsd"
+             version="3.1">
+
+    <persistence-unit name="rafEventBookerPU" transaction-type="RESOURCE_LOCAL">
+        <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
+
+        <!-- Klase entiteta koje JPA treba da prepozna -->
+        <class>org.uma_gym.web_event_booker.model.Category</class>
+        <class>org.uma_gym.web_event_booker.model.User</class>
+        <class>org.uma_gym.web_event_booker.model.Event</class>
+        <class>org.uma_gym.web_event_booker.model.Comment</class>
+        <class>org.uma_gym.web_event_booker.model.Tag</class>
+
+        <properties>
+            <!-- Konfiguracija za PostgreSQL -->
+            <property name="jakarta.persistence.jdbc.driver" value="org.postgresql.Driver"/>
+            <property name="jakarta.persistence.jdbc.url" value="jdbc:postgresql://localhost:5432/raf_event_booker"/>
+            <property name="jakarta.persistence.jdbc.user" value="vumdjur"/> <!-- Zamenite sa vašim korisničkim imenom -->
+            <property name="jakarta.persistence.jdbc.password" value="postgres"/> <!-- Zamenite sa vašom lozinkom -->
+
+            <!-- Hibernate podešavanja -->
+            <property name="hibernate.dialect" value="org.hibernate.dialect.PostgreSQLDialect"/>
+            <!-- "update" će automatski ažurirati šemu baze na osnovu entiteta -->
+            <property name="hibernate.hbm2ddl.auto" value="update"/>
+            <property name="hibernate.show_sql" value="true"/>
+            <property name="hibernate.format_sql" value="true"/>
+        </properties>
+    </persistence-unit>
+</persistence>
