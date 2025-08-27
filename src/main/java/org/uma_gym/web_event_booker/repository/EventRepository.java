@@ -45,7 +45,12 @@ public class EventRepository {
         EntityManager em = JPAUtil.getEntityManager();
         try {
             em.getTransaction().begin();
-            em.persist(event);
+            // IZMENA: Ako ID postoji, radi merge (update), ako ne, radi persist (create)
+            if (event.getId() == null) {
+                em.persist(event);
+            } else {
+                em.merge(event);
+            }
             em.getTransaction().commit();
         } catch (Exception e) {
             if (em.getTransaction().isActive()) {
@@ -56,5 +61,49 @@ public class EventRepository {
             em.close();
         }
         return event;
+    }
+
+    // --- NOVA METODA ---
+    public void deleteById(Long id) {
+        EntityManager em = JPAUtil.getEntityManager();
+        try {
+            em.getTransaction().begin();
+            Event event = em.find(Event.class, id);
+            if (event != null) {
+                // Pre brisanja događaja, moramo obrisati sve komentare vezane za njega
+                em.createQuery("DELETE FROM Comment c WHERE c.event.id = :eventId")
+                        .setParameter("eventId", id)
+                        .executeUpdate();
+
+                em.remove(event);
+            }
+            em.getTransaction().commit();
+        } catch (Exception e) {
+            if (em.getTransaction().isActive()) {
+                em.getTransaction().rollback();
+            }
+            throw e;
+        } finally {
+            em.close();
+        }
+    }
+    public List<Event> search(String query) {
+        EntityManager em = JPAUtil.getEntityManager();
+        try {
+            // IZMENA 1: Uklonili smo LOWER() oko :query parametra
+            String searchQuery = "SELECT DISTINCT e FROM Event e " +
+                    "LEFT JOIN FETCH e.author " +
+                    "LEFT JOIN FETCH e.category " +
+                    "LEFT JOIN FETCH e.tags " +
+                    "WHERE LOWER(e.naslov) LIKE :query OR LOWER(e.opis) LIKE :query " + // Uklonjen LOWER() oko :query
+                    "ORDER BY e.datumOdrzavanja DESC";
+
+            return em.createQuery(searchQuery, Event.class)
+                    // IZMENA 2: Prebacujemo query string u mala slova pre postavljanja parametra
+                    .setParameter("query", "%" + query.toLowerCase() + "%")
+                    .getResultList();
+        } finally {
+            em.close();
+        }
     }
 }

@@ -20,6 +20,8 @@ public class UserController {
     private UserService userService;
 
     @GET
+    @Secured
+    @RolesAllowed({"ADMIN"})
     @Produces(MediaType.APPLICATION_JSON)
     public Response getAll() {
         List<UserResponseDTO> users = userService.getAllUsers().stream()
@@ -29,6 +31,8 @@ public class UserController {
     }
 
     @POST
+    @Secured // Mora biti ulogovan...
+    @RolesAllowed({"ADMIN"}) // ...i mora biti ADMIN
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response create(@Valid User user) {

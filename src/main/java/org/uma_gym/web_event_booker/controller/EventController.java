@@ -48,4 +48,64 @@ public class EventController {
             return Response.status(Response.Status.NOT_FOUND).entity(e.getMessage()).build();
         }
     }
+
+    // --- NOVI ENDPOINT ZA UPDATE ---
+    @PUT
+    @Path("/{id}")
+    @Secured // Zaštiti endpoint
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response update(
+            @PathParam("id") Long id,
+            @Valid EventCreateDTO eventDTO,
+            @HeaderParam("Authorization") String authorizationHeader // Preuzmi token
+    ) {
+        try {
+            // Ukloni "Bearer " prefiks iz tokena
+            String token = authorizationHeader.substring("Bearer ".length()).trim();
+            Event updatedEvent = eventService.updateEvent(id, eventDTO, token);
+            return Response.ok(new EventResponseDTO(updatedEvent)).build();
+        } catch (NotFoundException e) {
+            return Response.status(Response.Status.NOT_FOUND).entity(e.getMessage()).build();
+        } catch (ForbiddenException e) {
+            return Response.status(Response.Status.FORBIDDEN).entity(e.getMessage()).build();
+        }
+    }
+
+    // --- NOVI ENDPOINT ZA DELETE ---
+    @DELETE
+    @Path("/{id}")
+    @Secured // Zaštiti endpoint
+    public Response delete(
+            @PathParam("id") Long id,
+            @HeaderParam("Authorization") String authorizationHeader // Preuzmi token
+    ) {
+        try {
+            String token = authorizationHeader.substring("Bearer ".length()).trim();
+            eventService.deleteEvent(id, token);
+            return Response.noContent().build(); // Status 204 No Content
+        } catch (NotFoundException e) {
+            return Response.status(Response.Status.NOT_FOUND).entity(e.getMessage()).build();
+        } catch (ForbiddenException e) {
+            return Response.status(Response.Status.FORBIDDEN).entity(e.getMessage()).build();
+        }
+    }
+
+    // --- NOVI ENDPOINT ZA PRETRAGU ---
+    @GET
+    @Path("/search")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response searchEvents(@QueryParam("query") String query) {
+        if (query == null || query.isEmpty()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("{\"error\": \"Query parameter 'query' is required.\"}")
+                    .build();
+        }
+
+        List<EventResponseDTO> foundEvents = eventService.searchEvents(query).stream()
+                .map(EventResponseDTO::new)
+                .collect(Collectors.toList());
+
+        return Response.ok(foundEvents).build();
+    }
 }

@@ -1,5 +1,6 @@
 package org.uma_gym.web_event_booker.config;
 
+import com.auth0.jwt.interfaces.DecodedJWT; // Dodaj import
 import jakarta.annotation.Priority;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Priorities;
@@ -7,15 +8,17 @@ import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.SecurityContext; // Dodaj import
 import jakarta.ws.rs.ext.Provider;
 import org.uma_gym.web_event_booker.controller.Secured;
 import org.uma_gym.web_event_booker.service.JwtService;
 
 import java.io.IOException;
+import java.security.Principal; // Dodaj import
 
-@Secured // Kaže filteru da se primenjuje samo na endpoint-e sa @Secured anotacijom
-@Provider // Registruje filter u JAX-RS aplikaciji
-@Priority(Priorities.AUTHENTICATION) // Postavlja visok prioritet izvršavanja
+@Secured
+@Provider
+@Priority(Priorities.AUTHENTICATION)
 public class AuthenticationFilter implements ContainerRequestFilter {
 
     @Inject
@@ -23,25 +26,54 @@ public class AuthenticationFilter implements ContainerRequestFilter {
 
     @Override
     public void filter(ContainerRequestContext requestContext) throws IOException {
-        // 1. Preuzmi 'Authorization' header iz zahteva
         String authHeader = requestContext.getHeaderString(HttpHeaders.AUTHORIZATION);
 
-        // 2. Proveri da li header postoji i da li je u ispravnom formatu "Bearer <token>"
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             abortWithUnauthorized(requestContext, "Authorization header must be provided.");
             return;
         }
 
-        // 3. Izdvoj token iz headera
         String token = authHeader.substring("Bearer ".length()).trim();
 
         try {
-            // 4. Validiraj token
-            jwtService.validateToken(token);
-            // U naprednijoj verziji, ovde biste mogli da izvučete korisnika iz tokena
-            // i postavite ga u SecurityContext da bude dostupan kontrolerima.
+            DecodedJWT decodedJWT = jwtService.validateToken(token); // Sačuvaj dekodirani token
+
+            // IZMENA POČINJE OVDE: Postavljanje SecurityContext-a
+
+            // Preuzmi podatke iz tokena
+            String userId = decodedJWT.getClaim("userId").asLong().toString();
+            String role = decodedJWT.getClaim("role").asString();
+
+            // Kreiraj novi SecurityContext
+            SecurityContext originalContext = requestContext.getSecurityContext();
+            SecurityContext newContext = new SecurityContext() {
+                @Override
+                public Principal getUserPrincipal() {
+                    // Principal je standardni Java objekat koji predstavlja identitet korisnika
+                    return () -> userId;
+                }
+
+                @Override
+                public boolean isUserInRole(String requiredRole) {
+                    // Ova metoda proverava da li korisnik ima traženu ulogu
+                    return role != null && role.equals(requiredRole);
+                }
+
+                @Override
+                public boolean isSecure() {
+                    return originalContext.isSecure();
+                }
+
+                @Override
+                public String getAuthenticationScheme() {
+                    return "Bearer";
+                }
+            };
+
+            // Postavi novi SecurityContext za ovaj zahtev
+            requestContext.setSecurityContext(newContext);
+
         } catch (Exception e) {
-            // 5. Ako validacija ne uspe, odbij zahtev
             abortWithUnauthorized(requestContext, "Invalid token.");
         }
     }
