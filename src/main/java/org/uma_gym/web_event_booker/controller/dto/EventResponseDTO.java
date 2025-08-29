@@ -1,8 +1,8 @@
 package org.uma_gym.web_event_booker.controller.dto;
 
 import org.uma_gym.web_event_booker.model.Event;
-import org.uma_gym.web_event_booker.model.Tag;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -12,9 +12,10 @@ public class EventResponseDTO {
     private String opis;
     private LocalDateTime datumOdrzavanja;
     private String lokacija;
-    private UserResponseDTO author; // Koristimo DTO da ne prikažemo lozinku
+    private UserResponseDTO author;
     private String categoryName;
-    private List<String> tags;
+    private Long categoryId; // Dodajemo ID kategorije za lakše editovanje
+    private List<TagDTO> tags; // Koristimo TagDTO
 
     public EventResponseDTO(Event event) {
         this.id = event.getId();
@@ -22,12 +23,22 @@ public class EventResponseDTO {
         this.opis = event.getOpis();
         this.datumOdrzavanja = event.getDatumOdrzavanja();
         this.lokacija = event.getLokacija();
-        this.author = new UserResponseDTO(event.getAuthor());
-        this.categoryName = event.getCategory().getName();
-        this.tags = event.getTags().stream().map(Tag::getNaziv).collect(Collectors.toList());
+
+        if (event.getAuthor() != null) {
+            this.author = new UserResponseDTO(event.getAuthor());
+        }
+        if (event.getCategory() != null) {
+            this.categoryName = event.getCategory().getName();
+            this.categoryId = event.getCategory().getId(); // Dodajemo ID
+        }
+        if (event.getTags() != null) {
+            this.tags = event.getTags().stream().map(TagDTO::new).collect(Collectors.toList());
+        } else {
+            this.tags = Collections.emptyList();
+        }
     }
 
-    // Generišite Gettere
+    // Getteri
     public Long getId() { return id; }
     public String getNaslov() { return naslov; }
     public String getOpis() { return opis; }
@@ -35,5 +46,6 @@ public class EventResponseDTO {
     public String getLokacija() { return lokacija; }
     public UserResponseDTO getAuthor() { return author; }
     public String getCategoryName() { return categoryName; }
-    public List<String> getTags() { return tags; }
+    public Long getCategoryId() { return categoryId; }
+    public List<TagDTO> getTags() { return tags; }
 }

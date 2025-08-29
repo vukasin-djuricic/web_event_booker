@@ -102,12 +102,25 @@ public class EventService {
         }
     }
 
-    // --- NOVA METODA ZA PRETRAGU ---
+    // --- NOVA METODA ZA PRETRAGU (FILTRIRANJE U MEMORIJI) ---
     public List<Event> searchEvents(String query) {
         if (query == null || query.trim().isEmpty()) {
-            // Ako je upit prazan, vrati sve događaje (ili praznu listu, po izboru)
             return eventRepository.findAll();
         }
-        return eventRepository.search(query);
+
+        // 1. Dohvati SVE događaje iz baze
+        List<Event> allEvents = eventRepository.findAll();
+
+        // Pripremi string za pretragu (pretvori ga u mala slova)
+        String lowerCaseQuery = query.toLowerCase();
+
+        // 2. Filtriraj listu u memoriji koristeći Java Stream
+        return allEvents.stream()
+                .filter(event ->
+                        // Proveri da li naslov ili opis sadrže traženi pojam (case-insensitive)
+                        (event.getNaslov() != null && event.getNaslov().toLowerCase().contains(lowerCaseQuery)) ||
+                                (event.getOpis() != null && event.getOpis().toLowerCase().contains(lowerCaseQuery))
+                )
+                .collect(java.util.stream.Collectors.toList());
     }
 }

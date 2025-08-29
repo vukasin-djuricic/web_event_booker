@@ -7,6 +7,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.uma_gym.web_event_booker.controller.dto.LoginRequestDTO;
 import org.uma_gym.web_event_booker.controller.dto.UserResponseDTO;
+import org.uma_gym.web_event_booker.controller.dto.UserUpdateDTO;
 import org.uma_gym.web_event_booker.model.User;
 import org.uma_gym.web_event_booker.service.UserService;
 
@@ -42,6 +43,39 @@ public class UserController {
         } catch (IllegalArgumentException e) {
             // Vraćamo 409 Conflict ako korisnik već postoji
             return Response.status(Response.Status.CONFLICT).entity(e.getMessage()).build();
+        }
+    }
+
+    @PUT
+    @Path("/{id}")
+    @Secured
+    @RolesAllowed({"ADMIN"})
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response update(@PathParam("id") Long id, @Valid UserUpdateDTO userUpdateDTO) {
+        try {
+            User updatedUser = userService.updateUser(id, userUpdateDTO);
+            return Response.ok(new UserResponseDTO(updatedUser)).build();
+        } catch (NotFoundException e) {
+            return Response.status(Response.Status.NOT_FOUND).entity(e.getMessage()).build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.CONFLICT).entity(e.getMessage()).build();
+        }
+    }
+
+    @PUT
+    @Path("/{id}/toggle-status")
+    @Secured
+    @RolesAllowed({"ADMIN"})
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response toggleStatus(@PathParam("id") Long id) {
+        try {
+            User updatedUser = userService.toggleUserStatus(id);
+            return Response.ok(new UserResponseDTO(updatedUser)).build();
+        } catch (NotFoundException e) {
+            return Response.status(Response.Status.NOT_FOUND).entity(e.getMessage()).build();
+        } catch (ForbiddenException e) {
+            return Response.status(Response.Status.FORBIDDEN).entity(e.getMessage()).build();
         }
     }
 

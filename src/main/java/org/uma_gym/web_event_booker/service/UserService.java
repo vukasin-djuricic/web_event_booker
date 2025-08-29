@@ -2,8 +2,12 @@ package org.uma_gym.web_event_booker.service;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.ForbiddenException;
+import jakarta.ws.rs.NotFoundException;
 import org.mindrot.jbcrypt.BCrypt;
+import org.uma_gym.web_event_booker.controller.dto.UserUpdateDTO;
 import org.uma_gym.web_event_booker.model.User;
+import org.uma_gym.web_event_booker.model.UserType;
 import org.uma_gym.web_event_booker.repository.UserRepository;
 
 import java.util.List;
@@ -24,6 +28,37 @@ public class UserService {
 
     public Optional<User> getUserById(Long id) {
         return this.userRepository.findById(id);
+    }
+
+    public User updateUser(Long id, UserUpdateDTO userUpdateDTO) {
+        User userToUpdate = userRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Korisnik sa ID " + id + " nije pronađen."));
+
+        // Provera da li novi email već postoji (a ne pripada trenutnom korisniku)
+        userRepository.findByEmail(userUpdateDTO.getEmail()).ifPresent(existingUser -> {
+            if (!existingUser.getId().equals(id)) {
+                throw new IllegalArgumentException("Email adresa je već zauzeta.");
+            }
+        });
+
+        userToUpdate.setIme(userUpdateDTO.getIme());
+        userToUpdate.setPrezime(userUpdateDTO.getPrezime());
+        userToUpdate.setEmail(userUpdateDTO.getEmail());
+        userToUpdate.setUserType(userUpdateDTO.getUserType());
+
+        return userRepository.save(userToUpdate);
+    }
+
+    public User toggleUserStatus(Long id) {
+        User userToUpdate = userRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Korisnik sa ID " + id + " nije pronađen."));
+
+        if (userToUpdate.getUserType() == UserType.ADMIN) {
+            throw new ForbiddenException("Admin nalog ne može biti deaktiviran.");
+        }
+
+        userToUpdate.setActive(!userToUpdate.isActive());
+        return userRepository.save(userToUpdate);
     }
 
     public User createUser(User user) {
