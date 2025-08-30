@@ -49,6 +49,16 @@ public class EventController {
         }
     }
 
+    @GET
+    @Path("/category/{id}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getEventsByCategory(@PathParam("id") Long id) {
+        List<EventResponseDTO> events = eventService.getEventsByCategoryId(id).stream()
+                .map(EventResponseDTO::new)
+                .collect(Collectors.toList());
+        return Response.ok(events).build();
+    }
+
     // --- NOVI ENDPOINT ZA UPDATE ---
     @PUT
     @Path("/{id}")

@@ -83,4 +83,17 @@ public class EventRepository {
             em.close();
         }
     }
+
+    public List<Event> findByCategoryId(Long categoryId) {
+        EntityManager em = JPAUtil.getEntityManager();
+        try {
+            return em.createQuery(
+                    "SELECT DISTINCT e FROM Event e LEFT JOIN FETCH e.author LEFT JOIN FETCH e.category LEFT JOIN FETCH e.tags WHERE e.category.id = :categoryId ORDER BY e.datumOdrzavanja DESC",
+                    Event.class
+            ).setParameter("categoryId", categoryId).getResultList();
+        } finally {
+            em.close();
+        }
+    }
+
 }

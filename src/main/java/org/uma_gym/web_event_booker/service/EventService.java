@@ -72,6 +72,23 @@ public class EventService {
         return eventRepository.save(eventToUpdate);
     }
 
+    public List<Event> getEventsByCategoryId(Long categoryId) {
+        return eventRepository.findByCategoryId(categoryId);
+    }
+
+    public List<Event> getEventsByTagId(Long tagId) {
+        // 1. Dohvati SVE događaje iz baze
+        List<Event> allEvents = eventRepository.findAll();
+
+        // 2. Filtriraj listu u memoriji
+        return allEvents.stream()
+                .filter(event -> event.getTags() != null && event.getTags().stream()
+                        // Proveri da li BILO KOJI tag u listi tagova događaja ima traženi ID
+                        .anyMatch(tag -> tag.getId().equals(tagId))
+                )
+                .collect(java.util.stream.Collectors.toList());
+    }
+
     // --- NOVA METODA ZA DELETE ---
     public void deleteEvent(Long eventId, String token) {
         Event eventToDelete = eventRepository.findById(eventId)
