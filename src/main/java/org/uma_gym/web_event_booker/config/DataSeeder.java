@@ -9,6 +9,7 @@ import org.uma_gym.web_event_booker.model.*;
 import org.uma_gym.web_event_booker.repository.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @ApplicationScoped
@@ -20,106 +21,100 @@ public class DataSeeder {
     @Inject private EventRepository eventRepository;
     @Inject private CommentRepository commentRepository;
 
-    /**
-     * Ova metoda se automatski poziva kada se CDI Application Scope inicijalizuje.
-     * Koristimo je da popunimo bazu sa početnim podacima ako je prazna.
-     * @param event Objekat koji nosi informaciju o događaju.
-     */
-    public void seedData(@Observes @Initialized(ApplicationScoped.class) Object event) {
+    public void seedData(@Observes @Initialized(ApplicationScoped.class) Object init) {
 
-        // Proveravamo da li već postoje korisnici da ne bismo duplirali podatke
-        if (userRepository.findAll().isEmpty()) {
-            System.out.println(">>> Baza je prazna, popunjavam sa test podacima...");
+        // Proveravamo da li već postoje događaji da ne bismo duplirali podatke
+        if (eventRepository.countAll() > 0) {
+            System.out.println(">>> Baza već sadrži podatke, preskačem popunjavanje.");
+            return;
+        }
 
-            // --- 1. Kreiranje Korisnika ---
-            User admin = new User();
-            admin.setEmail("admin@raf.rs");
-            admin.setIme("Admin");
-            admin.setPrezime("Adminic");
-            admin.setUserType(UserType.ADMIN);
-            admin.setLozinka(BCrypt.hashpw("admin123", BCrypt.gensalt()));
-            admin.setActive(true);
-            userRepository.save(admin);
+        System.out.println(">>> Baza je prazna, popunjavam sa test podacima...");
 
-            User eventCreator = new User();
-            eventCreator.setEmail("creator@raf.rs");
-            eventCreator.setIme("Kreator");
-            eventCreator.setPrezime("Kreatoric");
-            eventCreator.setUserType(UserType.EVENT_CREATOR);
-            eventCreator.setLozinka(BCrypt.hashpw("creator123", BCrypt.gensalt()));
-            eventCreator.setActive(true);
-            userRepository.save(eventCreator);
+        // --- 1. Kreiranje Korisnika ---
+        User admin = new User();
+        admin.setEmail("admin@raf.rs");
+        admin.setIme("Admin");
+        admin.setPrezime("Adminic");
+        admin.setUserType(UserType.ADMIN);
+        admin.setLozinka(BCrypt.hashpw("admin123", BCrypt.gensalt()));
+        admin.setActive(true);
+        userRepository.save(admin);
 
-            System.out.println(">>> Kreirano 2 korisnika.");
+        User eventCreator = new User();
+        eventCreator.setEmail("creator@raf.rs");
+        eventCreator.setIme("Kreator");
+        eventCreator.setPrezime("Kreatoric");
+        eventCreator.setUserType(UserType.EVENT_CREATOR);
+        eventCreator.setLozinka(BCrypt.hashpw("creator123", BCrypt.gensalt()));
+        eventCreator.setActive(true);
+        userRepository.save(eventCreator);
+        System.out.println(">>> Kreirano 2 korisnika.");
 
-            // --- 2. Kreiranje Kategorija ---
-            Category catKoncerti = new Category();
-            catKoncerti.setName("Koncerti");
-            catKoncerti.setDescription("Svi muzički događaji, od roka do klasike.");
-            categoryRepository.save(catKoncerti);
+        // --- 2. Kreiranje Kategorija ---
+        List<Category> categories = new ArrayList<>();
+        for (int i = 1; i <= 25; i++) {
+            Category cat = new Category();
+            cat.setName("Test Kategorija " + i);
+            cat.setDescription("Opis za kategoriju broj " + i + ".");
+            categoryRepository.save(cat);
+            categories.add(cat);
+        }
+        System.out.println(">>> Kreirano 25 kategorija.");
 
-            Category catKonferencije = new Category();
-            catKonferencije.setName("Konferencije");
-            catKonferencije.setDescription("Stručni skupovi, predavanja i paneli.");
-            categoryRepository.save(catKonferencije);
+        // --- 3. Kreiranje Tagova ---
+        Tag tagIT = new Tag();
+        tagIT.setNaziv("IT");
+        tagRepository.save(tagIT);
 
-            System.out.println(">>> Kreirano 2 kategorije.");
+        Tag tagMuzika = new Tag();
+        tagMuzika.setNaziv("Muzika");
+        tagRepository.save(tagMuzika);
 
-            // --- 3. Kreiranje Tagova ---
-            Tag tagIT = new Tag();
-            tagIT.setNaziv("IT");
-            tagRepository.save(tagIT);
+        Tag tagBiznis = new Tag();
+        tagBiznis.setNaziv("Biznis");
+        tagRepository.save(tagBiznis);
+        System.out.println(">>> Kreirano 3 taga.");
 
-            Tag tagMuzika = new Tag();
-            tagMuzika.setNaziv("Muzika");
-            tagRepository.save(tagMuzika);
+        // --- 4. Kreiranje Događaja ---
+        List<Event> createdEvents = new ArrayList<>();
+        for (int i = 1; i <= 25; i++) {
+            Event event = new Event();
+            event.setNaslov("Test Događaj Broj " + i);
+            event.setOpis("Ovo je detaljan opis za testni događaj broj " + i + ". Razgovaraćemo o najnovijim trendovima.");
+            event.setLokacija("Lokacija " + ((i % 5) + 1)); // Vrti 5 lokacija
+            event.setDatumOdrzavanja(LocalDateTime.now().plusDays(i));
+            event.setAuthor((i % 2 == 0) ? admin : eventCreator); // Menjaj autore
+            event.setCategory(categories.get((i - 1) % categories.size())); // Vrti kategorije
 
-            Tag tagBiznis = new Tag();
-            tagBiznis.setNaziv("Biznis");
-            tagRepository.save(tagBiznis);
+            List<Tag> eventTags = new ArrayList<>();
+            if (i % 2 == 0) eventTags.add(tagIT);
+            if (i % 3 == 0) eventTags.add(tagMuzika);
+            if (i % 5 == 0) eventTags.add(tagBiznis);
+            if (eventTags.isEmpty()) eventTags.add(tagIT); // Svaki događaj ima bar jedan tag
+            event.setTags(eventTags);
 
-            System.out.println(">>> Kreirano 3 taga.");
+            eventRepository.save(event);
+            createdEvents.add(event);
+        }
+        System.out.println(">>> Kreirano 25 događaja.");
 
-            // --- 4. Kreiranje Događaja ---
-            Event event1 = new Event();
-            event1.setNaslov("Velika IT Konferencija 2025");
-            event1.setOpis("Godišnji skup vodećih IT stručnjaka iz regiona. Teme uključuju veštačku inteligenciju, cloud tehnologije i cybersecurity.");
-            event1.setLokacija("Belexpocentar, Beograd");
-            event1.setDatumOdrzavanja(LocalDateTime.of(2025, 10, 15, 9, 0));
-            event1.setAuthor(admin); // Admin je autor
-            event1.setCategory(catKonferencije);
-            event1.setTags(List.of(tagIT, tagBiznis)); // Povezujemo sa tagovima
-            eventRepository.save(event1);
-
-            Event event2 = new Event();
-            event2.setNaslov("Letnji Rock Festival");
-            event2.setOpis("Trodnevni festival rock muzike na otvorenom. Nastupaju domaći i strani bendovi.");
-            event2.setLokacija("Petrovaradinska tvrđava, Novi Sad");
-            event2.setDatumOdrzavanja(LocalDateTime.of(2025, 8, 8, 18, 0));
-            event2.setAuthor(eventCreator); // Event Creator je autor
-            event2.setCategory(catKoncerti);
-            event2.setTags(List.of(tagMuzika)); // Povezujemo sa tagom
-            eventRepository.save(event2);
-
-            System.out.println(">>> Kreirano 2 događaja.");
-
-            // --- 5. Kreiranje Komentara ---
+        // --- 5. Kreiranje Komentara za prva dva događaja ---
+        if (!createdEvents.isEmpty()) {
             Comment comment1 = new Comment();
             comment1.setImeAutora("Petar Petrović");
-            comment1.setTekstKomentara("Odličan line-up na festivalu ove godine!");
-            comment1.setEvent(event2); // Komentar za drugi događaj (festival)
+            comment1.setTekstKomentara("Jedva čekam ovaj događaj!");
+            comment1.setEvent(createdEvents.get(0));
             commentRepository.save(comment1);
 
             Comment comment2 = new Comment();
-            comment2.setImeAutora("Jovana Jovanović");
-            comment2.setTekstKomentara("Da li će biti live stream konferencije?");
-            comment2.setEvent(event1); // Komentar za prvi događaj (konferencija)
+            comment2.setImeAutora("Milica Marković");
+            comment2.setTekstKomentara("Da li će biti snimak dostupan online?");
+            comment2.setEvent(createdEvents.get(1));
             commentRepository.save(comment2);
-
             System.out.println(">>> Kreirano 2 komentara.");
-            System.out.println(">>> Popunjavanje baze završeno.");
-        } else {
-            System.out.println(">>> Baza već sadrži podatke, preskačem popunjavanje.");
         }
+
+        System.out.println(">>> Popunjavanje baze završeno.");
     }
 }

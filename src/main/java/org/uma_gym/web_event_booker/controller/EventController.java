@@ -7,6 +7,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.uma_gym.web_event_booker.controller.dto.EventCreateDTO;
 import org.uma_gym.web_event_booker.controller.dto.EventResponseDTO;
+import org.uma_gym.web_event_booker.controller.dto.PagedResult;
 import org.uma_gym.web_event_booker.model.Event;
 import org.uma_gym.web_event_booker.service.EventService;
 import java.util.List;
@@ -20,11 +21,11 @@ public class EventController {
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getAll() {
-        List<EventResponseDTO> events = eventService.getAllEvents().stream()
-                .map(EventResponseDTO::new)
-                .collect(Collectors.toList());
-        return Response.ok(events).build();
+    public Response getAll(@QueryParam("page") @DefaultValue("1") int page,
+                           @QueryParam("limit") @DefaultValue("10") int limit) {
+        // Servis sada vraća PagedResult, koji direktno prosleđujemo kao odgovor
+        PagedResult<EventResponseDTO> pagedResult = eventService.getAllEvents(page, limit);
+        return Response.ok(pagedResult).build();
     }
 
     @GET
@@ -117,5 +118,27 @@ public class EventController {
                 .collect(Collectors.toList());
 
         return Response.ok(foundEvents).build();
+    }
+
+    //VIEW LIKE DISLIKE
+    @POST
+    @Path("/{id}/view")
+    public Response incrementView(@PathParam("id") Long id) {
+        eventService.incrementViewCount(id);
+        return Response.ok().build();
+    }
+
+    @POST
+    @Path("/{id}/like")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response likeEvent(@PathParam("id") Long id) {
+        return Response.ok(new EventResponseDTO(eventService.likeEvent(id))).build();
+    }
+
+    @POST
+    @Path("/{id}/dislike")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response dislikeEvent(@PathParam("id") Long id) {
+        return Response.ok(new EventResponseDTO(eventService.dislikeEvent(id))).build();
     }
 }

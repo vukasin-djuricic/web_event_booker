@@ -12,13 +12,22 @@ import java.util.Optional;
 @ApplicationScoped
 public class EventRepository {
 
-    public List<Event> findAll() {
+    public List<Event> findAll(int page, int limit) {
         EntityManager em = JPAUtil.getEntityManager();
         try {
             return em.createQuery(
-                    "SELECT DISTINCT e FROM Event e LEFT JOIN FETCH e.author LEFT JOIN FETCH e.category LEFT JOIN FETCH e.tags",
-                    Event.class
-            ).getResultList();
+                            "SELECT DISTINCT e FROM Event e LEFT JOIN FETCH e.author LEFT JOIN FETCH e.category LEFT JOIN FETCH e.tags ORDER BY e.vremeKreiranja DESC", Event.class)
+                    .setFirstResult((page - 1) * limit)
+                    .setMaxResults(limit)
+                    .getResultList();
+        } finally {
+            em.close();
+        }
+    }
+    public long countAll() {
+        EntityManager em = JPAUtil.getEntityManager();
+        try {
+            return em.createQuery("SELECT COUNT(e) FROM Event e", Long.class).getSingleResult();
         } finally {
             em.close();
         }

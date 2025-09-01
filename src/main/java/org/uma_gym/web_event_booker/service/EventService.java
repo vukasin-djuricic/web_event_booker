@@ -6,6 +6,8 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.ForbiddenException; // Dodaj import
 import jakarta.ws.rs.NotFoundException;
 import org.uma_gym.web_event_booker.controller.dto.EventCreateDTO;
+import org.uma_gym.web_event_booker.controller.dto.EventResponseDTO;
+import org.uma_gym.web_event_booker.controller.dto.PagedResult;
 import org.uma_gym.web_event_booker.model.*; // Dodaj import
 import org.uma_gym.web_event_booker.repository.CategoryRepository;
 import org.uma_gym.web_event_booker.repository.EventRepository;
@@ -13,6 +15,7 @@ import org.uma_gym.web_event_booker.repository.TagRepository;
 import org.uma_gym.web_event_booker.repository.UserRepository;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class EventService {
@@ -24,7 +27,15 @@ public class EventService {
     @Inject private JwtService jwtService; // Dodaj JwtService
 
     // ... getAllEvents, getEventById, createEvent ostaju isti ...
-    public List<Event> getAllEvents() { return eventRepository.findAll(); }
+
+    // U EventService.java
+    public PagedResult<EventResponseDTO> getAllEvents(int page, int limit) {
+        List<Event> events = eventRepository.findAll(page, limit);
+        long totalCount = eventRepository.countAll();
+        List<EventResponseDTO> dtos = events.stream().map(EventResponseDTO::new).collect(Collectors.toList());
+        return new PagedResult<>(dtos, totalCount);
+    }
+
     public Optional<Event> getEventById(Long id) { return eventRepository.findById(id); }
     public Event createEvent(EventCreateDTO dto) {
         User author = userRepository.findById(dto.getAuthorId())
@@ -78,7 +89,7 @@ public class EventService {
 
     public List<Event> getEventsByTagId(Long tagId) {
         // 1. Dohvati SVE događaje iz baze
-        List<Event> allEvents = eventRepository.findAll();
+        List<Event> allEvents = eventRepository.findAll(1,100);//svi itemi
 
         // 2. Filtriraj listu u memoriji
         return allEvents.stream()
@@ -122,11 +133,11 @@ public class EventService {
     // --- NOVA METODA ZA PRETRAGU (FILTRIRANJE U MEMORIJI) ---
     public List<Event> searchEvents(String query) {
         if (query == null || query.trim().isEmpty()) {
-            return eventRepository.findAll();
+            return eventRepository.findAll(1,100); // svi itemi
         }
 
         // 1. Dohvati SVE događaje iz baze
-        List<Event> allEvents = eventRepository.findAll();
+        List<Event> allEvents = eventRepository.findAll(1,100); //svi itemi
 
         // Pripremi string za pretragu (pretvori ga u mala slova)
         String lowerCaseQuery = query.toLowerCase();
@@ -140,4 +151,25 @@ public class EventService {
                 )
                 .collect(java.util.stream.Collectors.toList());
     }
+
+
+    //VIEWS; LIKE; DISLIKE
+    public void incrementViewCount(Long eventId) {
+        Event event = eventRepository.findById(eventId).orElseThrow(NotFoundException::new);
+        event.setBrojPoseta(event.getBrojPoseta() + 1);
+        eventRepository.save(event);
+    }
+
+    public Event likeEvent(Long eventId) {
+        Event event = eventRepository.findById(eventId).orElseThrow(NotFoundException::new);
+        event.setLikeCount(event.getLikeCount() + 1);
+        return eventRepository.save(event);
+    }
+
+    public Event dislikeEvent(Long eventId) {
+        Event event = eventRepository.findById(eventId).orElseThrow(NotFoundException::new);
+        event.setDislikeCount(event.getDislikeCount() + 1);
+        return eventRepository.save(event);
+    }
+
 }

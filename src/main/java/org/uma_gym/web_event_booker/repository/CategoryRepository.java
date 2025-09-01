@@ -11,10 +11,24 @@ import java.util.Optional;
 @ApplicationScoped
 public class CategoryRepository {
 
-    public List<Category> findAll() {
+    // Zamenite staru findAll() sa ovom
+    public List<Category> findAll(int page, int limit) {
         EntityManager em = JPAUtil.getEntityManager();
         try {
-            return em.createQuery("SELECT c FROM Category c", Category.class).getResultList();
+            return em.createQuery("SELECT c FROM Category c ORDER BY c.name", Category.class)
+                    .setFirstResult((page - 1) * limit) // Odakle da počne (npr. (2-1)*10 = 10)
+                    .setMaxResults(limit)              // Koliko rezultata da vrati
+                    .getResultList();
+        } finally {
+            em.close();
+        }
+    }
+
+    // Dodajte ovu novu metodu
+    public long countAll() {
+        EntityManager em = JPAUtil.getEntityManager();
+        try {
+            return em.createQuery("SELECT COUNT(c) FROM Category c", Long.class).getSingleResult();
         } finally {
             em.close();
         }

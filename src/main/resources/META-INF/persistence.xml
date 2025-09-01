@@ -13,6 +13,7 @@
         <class>org.uma_gym.web_event_booker.model.Event</class>
         <class>org.uma_gym.web_event_booker.model.Comment</class>
         <class>org.uma_gym.web_event_booker.model.Tag</class>
+        <class>org.uma_gym.web_event_booker.model.Rsvp</class>
 
         <properties>
             <!-- Konfiguracija za PostgreSQL -->

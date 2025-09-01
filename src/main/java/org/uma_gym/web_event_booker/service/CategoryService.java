@@ -2,6 +2,7 @@ package org.uma_gym.web_event_booker.service;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import org.uma_gym.web_event_booker.controller.dto.PagedResult;
 import org.uma_gym.web_event_booker.model.Category;
 import org.uma_gym.web_event_booker.repository.CategoryRepository;
 
@@ -14,8 +15,10 @@ public class CategoryService {
     @Inject
     private CategoryRepository categoryRepository;
 
-    public List<Category> getAllCategories() {
-        return this.categoryRepository.findAll();
+    public PagedResult<Category> getAllCategories(int page, int limit) {
+        List<Category> categories = categoryRepository.findAll(page, limit);
+        long totalCount = categoryRepository.countAll();
+        return new PagedResult<>(categories, totalCount);
     }
 
     public Optional<Category> getCategoryById(Long id) {

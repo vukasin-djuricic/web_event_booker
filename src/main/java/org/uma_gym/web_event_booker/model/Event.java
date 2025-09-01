@@ -36,6 +36,8 @@ public class Event {
     private String lokacija;
 
     private int brojPoseta = 0;
+    private int likeCount = 0;
+    private int dislikeCount = 0;
 
     private Integer maxKapacitet; // Opcionalno
 
@@ -82,4 +84,8 @@ public class Event {
     public void setCategory(Category category) { this.category = category; }
     public List<Tag> getTags() { return tags; }
     public void setTags(List<Tag> tags) { this.tags = tags; }
+    public int getLikeCount() { return likeCount; }
+    public void setLikeCount(int likeCount) { this.likeCount = likeCount; }
+    public int getDislikeCount() { return dislikeCount; }
+    public void setDislikeCount(int dislikeCount) { this.dislikeCount = dislikeCount; }
 }

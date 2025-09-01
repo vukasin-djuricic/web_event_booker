@@ -16,8 +16,9 @@ public class CategoryController {
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getAll() {
-        return Response.ok(this.categoryService.getAllCategories()).build();
+    public Response getAll(@QueryParam("page") @DefaultValue("1") int page,
+                           @QueryParam("limit") @DefaultValue("10") int limit) {
+        return Response.ok(categoryService.getAllCategories(page, limit)).build();
     }
 
     @GET

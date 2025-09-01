@@ -13,9 +13,19 @@ public class EventResponseDTO {
     private LocalDateTime datumOdrzavanja;
     private String lokacija;
     private UserResponseDTO author;
+
+    // Podaci o kategoriji
     private String categoryName;
-    private Long categoryId; // Dodajemo ID kategorije za lakše editovanje
-    private List<TagDTO> tags; // Koristimo TagDTO
+    private Long categoryId;
+
+    // Podaci o tagovima
+    private List<TagDTO> tags;
+
+    // PODACI KOJI SU NEDOSTAJALI:
+    private int brojPoseta;
+    private int likeCount;
+    private int dislikeCount;
+    private Integer maxKapacitet;
 
     public EventResponseDTO(Event event) {
         this.id = event.getId();
@@ -24,12 +34,18 @@ public class EventResponseDTO {
         this.datumOdrzavanja = event.getDatumOdrzavanja();
         this.lokacija = event.getLokacija();
 
+        // DODAJEMO NOVA POLJA
+        this.brojPoseta = event.getBrojPoseta();
+        this.likeCount = event.getLikeCount();
+        this.dislikeCount = event.getDislikeCount();
+        this.maxKapacitet = event.getMaxKapacitet();
+
         if (event.getAuthor() != null) {
             this.author = new UserResponseDTO(event.getAuthor());
         }
         if (event.getCategory() != null) {
             this.categoryName = event.getCategory().getName();
-            this.categoryId = event.getCategory().getId(); // Dodajemo ID
+            this.categoryId = event.getCategory().getId();
         }
         if (event.getTags() != null) {
             this.tags = event.getTags().stream().map(TagDTO::new).collect(Collectors.toList());
@@ -38,7 +54,13 @@ public class EventResponseDTO {
         }
     }
 
-    // Getteri
+    // GETTERI ZA NOVA POLJA:
+    public int getBrojPoseta() { return brojPoseta; }
+    public int getLikeCount() { return likeCount; }
+    public int getDislikeCount() { return dislikeCount; }
+    public Integer getMaxKapacitet() { return maxKapacitet; }
+
+    // Ostali getteri...
     public Long getId() { return id; }
     public String getNaslov() { return naslov; }
     public String getOpis() { return opis; }
