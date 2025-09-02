@@ -5,6 +5,7 @@ import jakarta.persistence.EntityManager;
 import org.uma_gym.web_event_booker.model.Comment;
 import org.uma_gym.web_event_booker.util.JPAUtil;
 import java.util.List;
+import java.util.Optional;
 
 @ApplicationScoped
 public class CommentRepository {
@@ -20,11 +21,26 @@ public class CommentRepository {
         }
     }
 
+    public Optional<Comment> findById(Long id) {
+        EntityManager em = JPAUtil.getEntityManager();
+        try {
+            return Optional.ofNullable(em.find(Comment.class, id));
+        } finally {
+            em.close();
+        }
+    }
+
+
     public Comment save(Comment comment) {
         EntityManager em = JPAUtil.getEntityManager();
         try {
             em.getTransaction().begin();
-            em.persist(comment);
+            // Ako ID postoji, radi merge (update), ako ne, radi persist (create)
+            if (comment.getId() == null) {
+                em.persist(comment);
+            } else {
+                em.merge(comment);
+            }
             em.getTransaction().commit();
         } catch (Exception e) {
             if (em.getTransaction().isActive()) {

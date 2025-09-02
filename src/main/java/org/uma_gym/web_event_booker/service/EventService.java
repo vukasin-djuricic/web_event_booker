@@ -26,14 +26,34 @@ public class EventService {
     @Inject private TagRepository tagRepository;
     @Inject private JwtService jwtService; // Dodaj JwtService
 
-    // ... getAllEvents, getEventById, createEvent ostaju isti ...
 
-    // U EventService.java
+    public List<Event> getRelatedEvents(Long eventId) {
+        // 1. Pronađi originalni događaj da bismo dobili njegove tagove
+        Event currentEvent = eventRepository.findById(eventId)
+                .orElseThrow(() -> new NotFoundException("Događaj sa ID " + eventId + " nije pronađen."));
+
+        // 2. Izvuci ID-jeve tagova iz originalnog događaja
+        List<Long> tagIds = currentEvent.getTags().stream()
+                .map(Tag::getId)
+                .collect(Collectors.toList());
+
+        // 3. Pozovi metodu repozitorijuma da pronađe srodne događaje
+        return eventRepository.findRelatedEvents(eventId, tagIds);
+    }
+
+    public List<Event> getTopReactedEvents() {
+        return eventRepository.findTopReactedEvents();
+    }
+
     public PagedResult<EventResponseDTO> getAllEvents(int page, int limit) {
         List<Event> events = eventRepository.findAll(page, limit);
         long totalCount = eventRepository.countAll();
         List<EventResponseDTO> dtos = events.stream().map(EventResponseDTO::new).collect(Collectors.toList());
         return new PagedResult<>(dtos, totalCount);
+    }
+
+    public List<Event> getMostVisitedEvents() {
+        return eventRepository.findMostVisitedInLast30Days();
     }
 
     public Optional<Event> getEventById(Long id) { return eventRepository.findById(id); }

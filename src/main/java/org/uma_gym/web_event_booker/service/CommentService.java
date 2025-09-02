@@ -41,4 +41,20 @@ public class CommentService {
         // 4. Sačuvaj komentar u bazi
         return commentRepository.save(comment);
     }
+
+    public Comment likeComment(Long commentId) {
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new NotFoundException("Komentar sa ID " + commentId + " nije pronađen."));
+
+        comment.setLikeCount(comment.getLikeCount() + 1);
+        return commentRepository.save(comment);
+    }
+
+    public Comment dislikeComment(Long commentId) {
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new NotFoundException("Komentar sa ID " + commentId + " nije pronađen."));
+
+        comment.setDislikeCount(comment.getDislikeCount() + 1);
+        return commentRepository.save(comment);
+    }
 }

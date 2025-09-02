@@ -128,6 +128,36 @@ public class EventController {
         return Response.ok().build();
     }
 
+    @GET
+    @Path("/top-reacted")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getTopReacted() {
+        List<EventResponseDTO> events = eventService.getTopReactedEvents().stream()
+                .map(EventResponseDTO::new)
+                .collect(Collectors.toList());
+        return Response.ok(events).build();
+    }
+
+    @GET
+    @Path("/{id}/related")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getRelatedEvents(@PathParam("id") Long eventId) {
+        List<EventResponseDTO> events = eventService.getRelatedEvents(eventId).stream()
+                .map(EventResponseDTO::new)
+                .collect(Collectors.toList());
+        return Response.ok(events).build();
+    }
+
+    @GET
+    @Path("/most-visited")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getMostVisited() {
+        List<EventResponseDTO> events = eventService.getMostVisitedEvents().stream()
+                .map(EventResponseDTO::new)
+                .collect(Collectors.toList());
+        return Response.ok(events).build();
+    }
+
     @POST
     @Path("/{id}/like")
     @Produces(MediaType.APPLICATION_JSON)

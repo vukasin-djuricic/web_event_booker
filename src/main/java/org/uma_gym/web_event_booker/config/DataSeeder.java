@@ -86,6 +86,7 @@ public class DataSeeder {
             event.setDatumOdrzavanja(LocalDateTime.now().plusDays(i));
             event.setAuthor((i % 2 == 0) ? admin : eventCreator); // Menjaj autore
             event.setCategory(categories.get((i - 1) % categories.size())); // Vrti kategorije
+            event.setBrojPoseta(25-i);
 
             List<Tag> eventTags = new ArrayList<>();
             if (i % 2 == 0) eventTags.add(tagIT);
