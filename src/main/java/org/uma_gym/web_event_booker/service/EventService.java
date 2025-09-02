@@ -13,8 +13,11 @@ import org.uma_gym.web_event_booker.repository.CategoryRepository;
 import org.uma_gym.web_event_booker.repository.EventRepository;
 import org.uma_gym.web_event_booker.repository.TagRepository;
 import org.uma_gym.web_event_booker.repository.UserRepository;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @ApplicationScoped
@@ -32,14 +35,45 @@ public class EventService {
         Event currentEvent = eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Događaj sa ID " + eventId + " nije pronađen."));
 
-        // 2. Izvuci ID-jeve tagova iz originalnog događaja
-        List<Long> tagIds = currentEvent.getTags().stream()
+        // 2. Izvuci ID-jeve tagova u Set za brzu pretragu (O(1) kompleksnost)
+        Set<Long> currentEventTagIds = currentEvent.getTags().stream()
                 .map(Tag::getId)
-                .collect(Collectors.toList());
+                .collect(Collectors.toSet());
 
-        // 3. Pozovi metodu repozitorijuma da pronađe srodne događaje
-        return eventRepository.findRelatedEvents(eventId, tagIds);
+        // Ako trenutni događaj nema tagove, ne možemo naći srodne
+        if ((currentEventTagIds).isEmpty()) {
+            return new ArrayList<>(); // Vrati praznu listu
+        }
+
+        // 3. Dohvati SVE događaje iz baze
+        // Koristimo paginaciju sa velikim limitom da simuliramo "sve"
+        List<Event> allEvents = eventRepository.findAll(1, 1000);
+
+        // 4. Filtriraj u memoriji da pronađeš srodne
+        List<Event> relatedEvents = new ArrayList<>();
+        for (Event event : allEvents) {
+            // Preskoči ako je to isti događaj koji trenutno gledamo
+            if (event.getId().equals(eventId)) {
+                continue;
+            }
+
+            // Proveri da li ovaj događaj deli bar jedan tag sa trenutnim
+            for (Tag tag : event.getTags()) {
+                if (currentEventTagIds.contains(tag.getId())) {
+                    relatedEvents.add(event); // Ako deli, dodaj ga u listu
+                    break; // i prekini petlju za tagove, jer je jedan dovoljan
+                }
+            }
+
+            // Ako smo već našli 3 srodna događaja, ne moramo tražiti dalje
+            if (relatedEvents.size() == 3) {
+                break;
+            }
+        }
+
+        return relatedEvents;
     }
+
 
     public List<Event> getTopReactedEvents() {
         return eventRepository.findTopReactedEvents();
