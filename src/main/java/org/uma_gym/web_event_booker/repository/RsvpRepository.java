@@ -6,6 +6,8 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.NoResultException;
 import org.uma_gym.web_event_booker.model.Rsvp;
 import org.uma_gym.web_event_booker.util.JPAUtil;
+
+import java.util.List;
 import java.util.Optional;
 
 @ApplicationScoped
@@ -24,6 +26,17 @@ public class RsvpRepository {
             em.close();
         }
         return rsvp;
+    }
+
+    public List<Rsvp> findByEventId(Long eventId) {
+        EntityManager em = JPAUtil.getEntityManager();
+        try {
+            return em.createQuery("SELECT r FROM Rsvp r WHERE r.event.id = :eventId ORDER BY r.rsvpDate ASC", Rsvp.class)
+                    .setParameter("eventId", eventId)
+                    .getResultList();
+        } finally {
+            em.close();
+        }
     }
 
     public long countByEventId(Long eventId) {

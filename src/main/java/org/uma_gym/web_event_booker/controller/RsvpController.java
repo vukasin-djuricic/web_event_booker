@@ -7,15 +7,29 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.uma_gym.web_event_booker.controller.dto.RsvpCreateDTO;
+import org.uma_gym.web_event_booker.controller.dto.RsvpResponseDTO;
 import org.uma_gym.web_event_booker.service.RsvpService;
 
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Path("/events/{eventId}/rsvps")
 public class RsvpController {
 
     @Inject
     private RsvpService rsvpService;
+
+    @GET
+    @Secured // Zaštitimo endpoint
+    @RolesAllowed({"ADMIN", "EVENT_CREATOR"}) // Samo autorizovani korisnici
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getRsvpsForEvent(@PathParam("eventId") Long eventId) {
+        List<RsvpResponseDTO> rsvps = rsvpService.getRsvpsForEvent(eventId).stream()
+                .map(RsvpResponseDTO::new)
+                .collect(Collectors.toList());
+        return Response.ok(rsvps).build();
+    }
 
     @POST
     @Consumes(MediaType.APPLICATION_JSON)

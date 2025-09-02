@@ -11,6 +11,8 @@ import org.uma_gym.web_event_booker.model.Rsvp;
 import org.uma_gym.web_event_booker.repository.EventRepository;
 import org.uma_gym.web_event_booker.repository.RsvpRepository;
 
+import java.util.List;
+
 @ApplicationScoped
 public class RsvpService {
 
@@ -51,5 +53,11 @@ public class RsvpService {
         eventRepository.findById(eventId)
                 .orElseThrow(() -> new WebApplicationException("Događaj nije pronađen.", Response.Status.NOT_FOUND));
         return rsvpRepository.countByEventId(eventId);
+    }
+
+    public List<Rsvp> getRsvpsForEvent(Long eventId) {
+        eventRepository.findById(eventId)
+                .orElseThrow(() -> new WebApplicationException("Događaj nije pronađen.", Response.Status.NOT_FOUND));
+        return rsvpRepository.findByEventId(eventId);
     }
 }
