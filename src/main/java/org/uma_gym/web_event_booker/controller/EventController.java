@@ -53,11 +53,11 @@ public class EventController {
     @GET
     @Path("/category/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getEventsByCategory(@PathParam("id") Long id) {
-        List<EventResponseDTO> events = eventService.getEventsByCategoryId(id).stream()
-                .map(EventResponseDTO::new)
-                .collect(Collectors.toList());
-        return Response.ok(events).build();
+    public Response getEventsByCategory(@PathParam("id") Long id,
+                                        @QueryParam("page") @DefaultValue("1") int page,
+                                        @QueryParam("limit") @DefaultValue("9") int limit) {
+        PagedResult<EventResponseDTO> pagedResult = eventService.getEventsByCategoryId(id, page, limit);
+        return Response.ok(pagedResult).build();
     }
 
     // --- NOVI ENDPOINT ZA UPDATE ---
@@ -102,22 +102,25 @@ public class EventController {
         }
     }
 
-    // --- NOVI ENDPOINT ZA PRETRAGU ---
     @GET
     @Path("/search")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response searchEvents(@QueryParam("query") String query) {
-        if (query == null || query.isEmpty()) {
+    public Response searchEvents(@QueryParam("query") String query,
+                                 @QueryParam("page") @DefaultValue("1") int page,
+                                 @QueryParam("limit") @DefaultValue("9") int limit) {
+
+        // 1. Proveravamo da li je upit za pretragu prisutan
+        if (query == null || query.trim().isEmpty()) {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity("{\"error\": \"Query parameter 'query' is required.\"}")
                     .build();
         }
 
-        List<EventResponseDTO> foundEvents = eventService.searchEvents(query).stream()
-                .map(EventResponseDTO::new)
-                .collect(Collectors.toList());
+        // 2. Pozivamo ispravnu metodu servisa sa svim parametrima
+        PagedResult<EventResponseDTO> pagedResult = eventService.searchEvents(query, page, limit);
 
-        return Response.ok(foundEvents).build();
+        // 3. Vraćamo ceo PagedResult objekat direktno. Frontend zna kako da ga obradi.
+        return Response.ok(pagedResult).build();
     }
 
     //VIEW LIKE DISLIKE
@@ -171,4 +174,5 @@ public class EventController {
     public Response dislikeEvent(@PathParam("id") Long id) {
         return Response.ok(new EventResponseDTO(eventService.dislikeEvent(id))).build();
     }
+
 }

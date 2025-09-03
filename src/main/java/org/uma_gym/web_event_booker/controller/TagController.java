@@ -6,6 +6,7 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.uma_gym.web_event_booker.controller.dto.EventResponseDTO;
+import org.uma_gym.web_event_booker.controller.dto.PagedResult;
 import org.uma_gym.web_event_booker.model.Tag;
 import org.uma_gym.web_event_booker.service.EventService;
 import org.uma_gym.web_event_booker.service.TagService;
@@ -44,11 +45,11 @@ public class TagController {
     @GET
     @Path("/{id}/events")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getEventsByTag(@PathParam("id") Long id) {
-        List<EventResponseDTO> events = eventService.getEventsByTagId(id).stream()
-                .map(EventResponseDTO::new)
-                .collect(Collectors.toList());
-        return Response.ok(events).build();
+    public Response getEventsByTag(@PathParam("id") Long id,
+                                   @QueryParam("page") @DefaultValue("1") int page,
+                                   @QueryParam("limit") @DefaultValue("9") int limit) {
+        PagedResult<EventResponseDTO> pagedResult = eventService.getEventsByTagId(id, page, limit);
+        return Response.ok(pagedResult).build();
     }
 
 

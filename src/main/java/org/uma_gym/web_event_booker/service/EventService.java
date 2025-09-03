@@ -14,10 +14,7 @@ import org.uma_gym.web_event_booker.repository.EventRepository;
 import org.uma_gym.web_event_booker.repository.TagRepository;
 import org.uma_gym.web_event_booker.repository.UserRepository;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @ApplicationScoped
@@ -74,6 +71,19 @@ public class EventService {
         return relatedEvents;
     }
 
+    public PagedResult<EventResponseDTO> getEventsByCategoryId(Long categoryId, int page, int limit) {
+        List<Event> events = eventRepository.findByCategoryId(categoryId, page, limit);
+        long totalCount = eventRepository.countByCategoryId(categoryId);
+        List<EventResponseDTO> dtos = events.stream().map(EventResponseDTO::new).collect(Collectors.toList());
+        return new PagedResult<>(dtos, totalCount);
+    }
+
+    public PagedResult<EventResponseDTO> getEventsByTagId(Long tagId, int page, int limit) {
+        List<Event> events = eventRepository.findByTagId(tagId, page, limit);
+        long totalCount = eventRepository.countByTagId(tagId);
+        List<EventResponseDTO> dtos = events.stream().map(EventResponseDTO::new).collect(Collectors.toList());
+        return new PagedResult<>(dtos, totalCount);
+    }
 
     public List<Event> getTopReactedEvents() {
         return eventRepository.findTopReactedEvents();
@@ -185,25 +195,47 @@ public class EventService {
     }
 
     // --- NOVA METODA ZA PRETRAGU (FILTRIRANJE U MEMORIJI) ---
-    public List<Event> searchEvents(String query) {
+    public PagedResult<EventResponseDTO> searchEvents(String query, int page, int limit) {
         if (query == null || query.trim().isEmpty()) {
-            return eventRepository.findAll(1,100); // svi itemi
+            // Ako nema upita, samo vrati paginirane sve događaje
+            return getAllEvents(page, limit);
         }
 
         // 1. Dohvati SVE događaje iz baze
-        List<Event> allEvents = eventRepository.findAll(1,100); //svi itemi
+        // Koristimo paginaciju sa velikim limitom da bismo dobili sve
+        List<Event> allEvents = eventRepository.findAll(1, 1000);
 
         // Pripremi string za pretragu (pretvori ga u mala slova)
         String lowerCaseQuery = query.toLowerCase();
 
         // 2. Filtriraj listu u memoriji koristeći Java Stream
-        return allEvents.stream()
+        List<Event> filteredEvents = allEvents.stream()
                 .filter(event ->
-                        // Proveri da li naslov ili opis sadrže traženi pojam (case-insensitive)
                         (event.getNaslov() != null && event.getNaslov().toLowerCase().contains(lowerCaseQuery)) ||
                                 (event.getOpis() != null && event.getOpis().toLowerCase().contains(lowerCaseQuery))
                 )
-                .collect(java.util.stream.Collectors.toList());
+                .collect(Collectors.toList());
+
+        // 3. Sada primeni paginaciju na VEĆ FILTRIRANU listu
+        long totalCount = filteredEvents.size();
+        int startIndex = (page - 1) * limit;
+
+        // Provera da li je početni indeks validan
+        if (startIndex >= totalCount) {
+            // Ako je tražena stranica van opsega, vrati praznu listu
+            return new PagedResult<>(Collections.emptyList(), totalCount);
+        }
+
+        int endIndex = Math.min(startIndex + limit, (int) totalCount);
+
+        List<Event> paginatedEvents = filteredEvents.subList(startIndex, endIndex);
+
+        // 4. Mapiraj paginirane rezultate u DTO i vrati PagedResult
+        List<EventResponseDTO> dtos = paginatedEvents.stream()
+                .map(EventResponseDTO::new)
+                .collect(Collectors.toList());
+
+        return new PagedResult<>(dtos, totalCount);
     }
 
 

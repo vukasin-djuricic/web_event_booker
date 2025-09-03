@@ -14,23 +14,54 @@ import java.util.Optional;
 
 @ApplicationScoped
 public class EventRepository {
-
-    public List<Event> findRelatedEvents(Long currentEventId, List<Long> tagIds) {
-        // Ako događaj nema tagove, ne možemo naći srodne
-        if (tagIds == null || tagIds.isEmpty()) {
-            return new ArrayList<>();
+    public long countByCategoryId(Long categoryId) {
+        EntityManager em = JPAUtil.getEntityManager();
+        try {
+            return em.createQuery("SELECT COUNT(e) FROM Event e WHERE e.category.id = :categoryId", Long.class)
+                    .setParameter("categoryId", categoryId)
+                    .getSingleResult();
+        } finally {
+            em.close();
         }
+    }
+    public List<Event> findByCategoryId(Long categoryId, int page, int limit) {
+        EntityManager em = JPAUtil.getEntityManager();
+        try {
+            return em.createQuery(
+                            "SELECT e FROM Event e " +
+                                    "LEFT JOIN FETCH e.author LEFT JOIN FETCH e.category " +
+                                    "WHERE e.category.id = :categoryId ORDER BY e.datumOdrzavanja DESC",
+                            Event.class)
+                    .setParameter("categoryId", categoryId)
+                    .setFirstResult((page - 1) * limit)
+                    .setMaxResults(limit)
+                    .getResultList();
+        } finally {
+            em.close();
+        }
+    }
 
+    public long countByTagId(Long tagId) {
+        EntityManager em = JPAUtil.getEntityManager();
+        try {
+            return em.createQuery("SELECT COUNT(DISTINCT e.id) FROM Event e JOIN e.tags t WHERE t.id = :tagId", Long.class)
+                    .setParameter("tagId", tagId)
+                    .getSingleResult();
+        } finally {
+            em.close();
+        }
+    }
+    public List<Event> findByTagId(Long tagId, int page, int limit) {
         EntityManager em = JPAUtil.getEntityManager();
         try {
             return em.createQuery(
                             "SELECT DISTINCT e FROM Event e JOIN e.tags t " +
-                                    "WHERE e.id != :currentEventId AND t.id IN :tagIds " + // Uslovi: nije trenutni dog. I ima bar jedan od tagova
-                                    "ORDER BY e.vremeKreiranja DESC", // Sortiramo po najnovijim
+                                    "LEFT JOIN FETCH e.author LEFT JOIN FETCH e.category " +
+                                    "WHERE t.id = :tagId ORDER BY e.datumOdrzavanja DESC",
                             Event.class)
-                    .setParameter("currentEventId", currentEventId)
-                    .setParameter("tagIds", tagIds)
-                    .setMaxResults(3) // Ograničavamo na 3 rezultata
+                    .setParameter("tagId", tagId)
+                    .setFirstResult((page - 1) * limit)
+                    .setMaxResults(limit)
                     .getResultList();
         } finally {
             em.close();
