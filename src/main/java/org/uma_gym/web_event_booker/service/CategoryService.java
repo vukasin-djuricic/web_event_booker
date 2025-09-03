@@ -2,9 +2,12 @@ package org.uma_gym.web_event_booker.service;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
 import org.uma_gym.web_event_booker.controller.dto.PagedResult;
 import org.uma_gym.web_event_booker.model.Category;
 import org.uma_gym.web_event_booker.repository.CategoryRepository;
+import org.uma_gym.web_event_booker.repository.EventRepository;
 
 import java.util.List;
 import java.util.Optional;
@@ -14,6 +17,9 @@ public class CategoryService {
 
     @Inject
     private CategoryRepository categoryRepository;
+
+    @Inject
+    private EventRepository eventRepository;
 
     public PagedResult<Category> getAllCategories(int page, int limit) {
         List<Category> categories = categoryRepository.findAll(page, limit);
@@ -35,7 +41,10 @@ public class CategoryService {
     }
 
     public void deleteCategory(Long id) {
-        // Ovde ide poslovna logika, npr. provera da li postoji događaj sa ovom kategorijom
+        if(eventRepository.countByCategoryId(id) > 0) {
+            //ERROR 409 - conflict (handle u front)
+            throw new WebApplicationException("Ne može se obrisati kategorija koja ima povezane događaje.", Response.Status.CONFLICT);
+        }
         this.categoryRepository.deleteById(id);
     }
 }

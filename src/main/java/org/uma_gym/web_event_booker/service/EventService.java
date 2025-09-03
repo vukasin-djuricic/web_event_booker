@@ -72,16 +72,65 @@ public class EventService {
     }
 
     public PagedResult<EventResponseDTO> getEventsByCategoryId(Long categoryId, int page, int limit) {
-        List<Event> events = eventRepository.findByCategoryId(categoryId, page, limit);
-        long totalCount = eventRepository.countByCategoryId(categoryId);
-        List<EventResponseDTO> dtos = events.stream().map(EventResponseDTO::new).collect(Collectors.toList());
+        // 1. Dohvati SVE događaje iz baze
+        List<Event> allEvents = eventRepository.findAll(1, 1000);
+
+        // 2. Filtriraj listu u memoriji da nađeš događaje sa traženom kategorijom
+        List<Event> filteredEvents = allEvents.stream()
+                .filter(event -> event.getCategory() != null && event.getCategory().getId().equals(categoryId))
+                .collect(Collectors.toList());
+
+        // 3. Sada primeni paginaciju na VEĆ FILTRIRANU listu
+        long totalCount = filteredEvents.size();
+        int startIndex = (page - 1) * limit;
+
+        if (startIndex >= totalCount) {
+            return new PagedResult<>(Collections.emptyList(), totalCount);
+        }
+
+        int endIndex = Math.min(startIndex + limit, (int) totalCount);
+        List<Event> paginatedEvents = filteredEvents.subList(startIndex, endIndex);
+
+        // 4. Mapiraj paginirane rezultate u DTO i vrati PagedResult
+        List<EventResponseDTO> dtos = paginatedEvents.stream()
+                .map(EventResponseDTO::new)
+                .collect(Collectors.toList());
+
         return new PagedResult<>(dtos, totalCount);
     }
 
+    // ===== ZAMENITE STARU getEventsByTagId METODU SA OVOM =====
     public PagedResult<EventResponseDTO> getEventsByTagId(Long tagId, int page, int limit) {
-        List<Event> events = eventRepository.findByTagId(tagId, page, limit);
-        long totalCount = eventRepository.countByTagId(tagId);
-        List<EventResponseDTO> dtos = events.stream().map(EventResponseDTO::new).collect(Collectors.toList());
+        // 1. Dohvati SVE događaje iz baze (koristimo postojeći findAll sa velikim limitom)
+        List<Event> allEvents = eventRepository.findAll(1, 1000);
+
+        // 2. Filtriraj listu u memoriji da nađeš događaje sa traženim tagom
+        List<Event> filteredEvents = allEvents.stream()
+                .filter(event -> event.getTags() != null && event.getTags().stream()
+                        // Proveri da li bilo koji tag u listi tagova događaja ima traženi ID
+                        .anyMatch(tag -> tag.getId().equals(tagId))
+                )
+                .collect(Collectors.toList());
+
+        // 3. Sada primeni paginaciju na VEĆ FILTRIRANU listu
+        long totalCount = filteredEvents.size();
+        int startIndex = (page - 1) * limit;
+
+        // Ako je tražena stranica van opsega, vrati praznu listu
+        if (startIndex >= totalCount) {
+            return new PagedResult<>(Collections.emptyList(), totalCount);
+        }
+
+        // Odredi krajnji indeks za "sečenje" liste
+        int endIndex = Math.min(startIndex + limit, (int) totalCount);
+
+        List<Event> paginatedEvents = filteredEvents.subList(startIndex, endIndex);
+
+        // 4. Mapiraj paginirane rezultate u DTO i vrati PagedResult objekat
+        List<EventResponseDTO> dtos = paginatedEvents.stream()
+                .map(EventResponseDTO::new)
+                .collect(Collectors.toList());
+
         return new PagedResult<>(dtos, totalCount);
     }
 
